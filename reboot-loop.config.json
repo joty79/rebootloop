@@ -1,0 +1,5 @@
+{
+  "StopTimeoutSeconds": 30,
+  "ShutdownDelaySeconds": 5,
+  "SignInGraceDelaySeconds": 8
+}
