@@ -35,11 +35,10 @@
 reboot-loop.ps1
   -> Start BSOD boot test
   -> Loop
-  -> Change reboot timers
   -> Status
   -> Stop reboot test
   -> Stop and clean up
-  -> Stop, clean up, and delete folder
+  -> Optional folder delete prompt after cleanup
 ```
 
 Αυτό είναι πλέον το μόνο script που χρειάζεται για το εργαλείο.
@@ -132,6 +131,12 @@ Set-Location "D:\Users\joty79\scripts\reboot"
 - ζητάει password ή blank `Enter` για local no-password account
 - κάνει setup το `AutoLogon` και το `Scheduled Task`
 - στο τέλος ζητάει `Enter` για άμεσο reboot ή `Esc` για cancel προς το παρόν
+
+Το `Stop reboot test` δεν κλείνει πια το window του tool.
+Σταματάει το loop, αφαιρεί το active scheduled behavior, και σε κρατάει μέσα στο menu ώστε να συνεχίσεις από το ίδιο παράθυρο.
+
+Αν προκύψει unexpected error, το tool γράφει λεπτομέρειες στο `reboot-loop.log` μέσα στο ίδιο folder
+και δείχνει error screen με το path του log αντί να εξαφανίζεται αμέσως.
 
 Μετά το πρώτο reboot/sign-in θα δεις ξανά το script window.
 Αυτό είναι αναμενόμενο, γιατί το loop είναι interactive και πρέπει να μπορείς να πατήσεις `Esc` για να ακυρώσεις το τρέχον reboot και να μπεις στο menu.

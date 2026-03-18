@@ -118,3 +118,39 @@
 - Guardrail/rule: If the tool folder contains `.git`, block automatic folder deletion and keep the repo on disk even when the operator asked to remove the folder.
 - Files affected: `reboot-loop.ps1`, `README.md`, `CHANGELOG.md`
 - Validation/tests run: PowerShell parser validation and manual review of git-repo deletion guard behavior.
+
+### 2026-03-18 - Stop action must keep the operator inside the tool
+
+- Date: 2026-03-18
+- Problem: Using `Stop reboot test` closed the interactive session immediately, which made the stop flow feel abrupt and forced the operator to relaunch the tool for the next action.
+- Root cause: The menu session treated `Disable` like a terminal action and returned right after executing it.
+- Guardrail/rule: `Stop reboot test` should stop the loop but keep the current window alive and return the operator to the main menu.
+- Files affected: `reboot-loop.ps1`, `README.md`, `CHANGELOG.md`
+- Validation/tests run: PowerShell parser validation and manual review of post-stop menu flow.
+
+### 2026-03-18 - Interactive menu must survive blank input after stop flow
+
+- Date: 2026-03-18
+- Problem: After `Stop reboot test`, choosing another menu option could terminate the script as if it had crashed.
+- Root cause: The menu used terminating errors for invalid input, and the stop-to-menu transition could leave a blank selection that was treated as fatal.
+- Guardrail/rule: Menu selection must loop on blank or invalid input and show a warning instead of throwing a terminating error.
+- Files affected: `reboot-loop.ps1`, `CHANGELOG.md`
+- Validation/tests run: PowerShell parser validation and manual review of menu re-entry behavior after stop.
+
+### 2026-03-18 - Unexpected errors must leave a readable log
+
+- Date: 2026-03-18
+- Problem: When the tool failed, red error text could flash and the operator had no reliable record of what happened.
+- Root cause: There was no top-level crash logger or final error screen.
+- Guardrail/rule: Wrap the main entry flow in a top-level `try/catch`, write unexpected errors to `reboot-loop.log`, and show the log path on screen before exit.
+- Files affected: `reboot-loop.ps1`, `README.md`, `CHANGELOG.md`
+- Validation/tests run: PowerShell parser validation and manual review of crash-log output flow.
+
+### 2026-03-18 - Avoid helper names that collide with built-in ScheduledTasks cmdlets
+
+- Date: 2026-03-18
+- Problem: `Show current status` could fail after stopping the test with a parameter-binding error against `Get-ScheduledTaskInfo`.
+- Root cause: A local helper function reused the name of the built-in `Get-ScheduledTaskInfo` cmdlet, and the collision produced the wrong parameter contract at runtime.
+- Guardrail/rule: Do not name local helpers the same as ScheduledTasks cmdlets. Use repo-specific helper names such as `Get-RebootScheduledTask`.
+- Files affected: `reboot-loop.ps1`, `CHANGELOG.md`
+- Validation/tests run: PowerShell parser validation and manual review of the status lookup flow.

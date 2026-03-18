@@ -24,3 +24,7 @@
 - Removed the dedicated timer-edit option from the interactive menu so timer selection happens through the main start flow.
 - Combined the cleanup/delete menu options into one `Stop and clean up` flow that asks whether the folder should also be deleted.
 - Added a safety guard that blocks folder deletion when the tool folder appears to be a git repo/worktree.
+- Changed `Stop reboot test` so it keeps the tool window open and returns to the menu instead of closing the session.
+- Hardened the interactive menu so blank or invalid input no longer terminates the script after stop/menu transitions.
+- Added `reboot-loop.log` plus a top-level error screen so unexpected failures are captured and remain readable.
+- Fixed a naming collision with the built-in `Get-ScheduledTaskInfo` cmdlet that could break `Show current status` after stopping the test.

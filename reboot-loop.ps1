@@ -25,6 +25,7 @@ $ErrorActionPreference = 'Stop'
 $scriptRoot = Split-Path -Parent $PSCommandPath
 $managerPath = $PSCommandPath
 $configPath = Join-Path $scriptRoot 'reboot-loop.config.json'
+$logPath = Join-Path $scriptRoot 'reboot-loop.log'
 $disableFlagPath = Join-Path $scriptRoot 'reboot.disabled'
 $winlogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
 $defaultStopTimeoutSeconds = 60
@@ -115,6 +116,66 @@ function Write-MenuItem {
 
     Write-Host ("  {0}. " -f $Number) -NoNewline -ForegroundColor Cyan
     Write-Host $Text -ForegroundColor White
+}
+
+function Write-LogEntry {
+    param(
+        [string]$Level,
+        [string]$Message
+    )
+
+    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    $logLine = "[{0}] [{1}] {2}" -f $timestamp, $Level.ToUpperInvariant(), $Message
+    Add-Content -Path $logPath -Value $logLine -Encoding UTF8
+}
+
+function Write-ExceptionLog {
+    param(
+        [System.Management.Automation.ErrorRecord]$ErrorRecord,
+        [string]$Context
+    )
+
+    $exceptionMessage = $ErrorRecord.Exception.Message
+    $scriptStack = $ErrorRecord.ScriptStackTrace
+    $invocationLine = $ErrorRecord.InvocationInfo.Line
+
+    Write-LogEntry -Level 'ERROR' -Message ("{0} | {1}" -f $Context, $exceptionMessage)
+
+    if (-not [string]::IsNullOrWhiteSpace($invocationLine)) {
+        Write-LogEntry -Level 'ERROR' -Message ("Invocation: {0}" -f $invocationLine.Trim())
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($scriptStack)) {
+        Write-LogEntry -Level 'ERROR' -Message ("Stack: {0}" -f ($scriptStack -replace "(\r?\n)+", ' | '))
+    }
+}
+
+function Show-FatalErrorScreen {
+    param(
+        [System.Management.Automation.ErrorRecord]$ErrorRecord,
+        [string]$Context
+    )
+
+    try {
+        Write-Banner -Title 'UNEXPECTED ERROR' -Subtitle 'The tool hit an error and wrote a log entry.'
+        Write-ErrorLine $ErrorRecord.Exception.Message
+        Write-LabelValue -Label 'Context' -Value $Context -ValueColor Yellow
+        Write-LabelValue -Label 'Log file' -Value $logPath -ValueColor Cyan
+        if (-not [string]::IsNullOrWhiteSpace($ErrorRecord.InvocationInfo.PositionMessage)) {
+            Write-Host ''
+            Write-Section 'Where'
+            Write-InfoLine $ErrorRecord.InvocationInfo.PositionMessage.Trim()
+        }
+        Write-Host ''
+        Write-InfoLine 'Press Enter to close.'
+        Wait-ForEnter
+    }
+    catch {
+        Write-Host ''
+        Write-Host 'UNEXPECTED ERROR' -ForegroundColor Red
+        Write-Host $ErrorRecord.Exception.Message -ForegroundColor Red
+        Write-Host ("Log file: {0}" -f $logPath) -ForegroundColor Yellow
+    }
 }
 
 function Try-ActivateCurrentWindow {
@@ -393,7 +454,7 @@ function Resolve-RebootConfiguration {
     }
 }
 
-function Get-ScheduledTaskInfo {
+function Get-RebootScheduledTask {
     param(
         [string]$ScheduledTaskName
     )
@@ -805,7 +866,7 @@ function Invoke-Status {
     )
 
     $currentConfig = Get-RebootConfiguration
-    $taskInfo = Get-ScheduledTaskInfo -ScheduledTaskName $ScheduledTaskName
+    $taskInfo = Get-RebootScheduledTask -ScheduledTaskName $ScheduledTaskName
     $autoLogonEnabled = $false
 
     try {
@@ -832,37 +893,42 @@ function Get-MenuSelection {
         [switch]$IncludeReturnToCountdown
     )
 
-    Write-Banner -Title 'BSOD BOOT TEST MANAGER' -Subtitle 'One file for setup, loop control, timers, and cleanup'
-    Write-Section 'Menu'
-    Write-MenuItem -Number '1' -Text 'Start BSOD boot test'
-    Write-MenuItem -Number '2' -Text 'Show current status'
-    Write-MenuItem -Number '3' -Text 'Stop reboot test'
-    Write-MenuItem -Number '4' -Text 'Stop and clean up'
-    if ($IncludeReturnToCountdown) {
-        Write-MenuItem -Number '5' -Text 'Return to reboot countdown'
-    }
-    Write-Host ''
-    Write-InfoLine 'Tip: option 1 asks for the reboot timers during setup.'
-    Write-Host ''
-
-    $selectionPrompt = if ($IncludeReturnToCountdown) { 'Choose 1-5' } else { 'Choose 1-4' }
-    $selection = Read-Host $selectionPrompt
-    switch ($selection) {
-        '1' { return @{ Action = 'Setup'; DeleteFiles = $false; PromptForDeleteFolder = $false } }
-        '2' { return @{ Action = 'Status'; DeleteFiles = $false; PromptForDeleteFolder = $false } }
-        '3' { return @{ Action = 'Disable'; DeleteFiles = $false; PromptForDeleteFolder = $false } }
-        '4' { return @{ Action = 'Remove'; DeleteFiles = $false; PromptForDeleteFolder = $true } }
-        '5' {
-            if ($IncludeReturnToCountdown) {
-                return @{ Action = 'Loop'; DeleteFiles = $false; PromptForDeleteFolder = $false }
-            }
+    while ($true) {
+        Write-Banner -Title 'BSOD BOOT TEST MANAGER' -Subtitle 'One file for setup, loop control, timers, and cleanup'
+        Write-Section 'Menu'
+        Write-MenuItem -Number '1' -Text 'Start BSOD boot test'
+        Write-MenuItem -Number '2' -Text 'Show current status'
+        Write-MenuItem -Number '3' -Text 'Stop reboot test'
+        Write-MenuItem -Number '4' -Text 'Stop and clean up'
+        if ($IncludeReturnToCountdown) {
+            Write-MenuItem -Number '5' -Text 'Return to reboot countdown'
         }
-        default {
-            if ($IncludeReturnToCountdown) {
-                throw 'Invalid selection. Use 1, 2, 3, 4, or 5.'
-            }
+        Write-Host ''
+        Write-InfoLine 'Tip: option 1 asks for the reboot timers during setup.'
+        Write-Host ''
 
-            throw 'Invalid selection. Use 1, 2, 3, or 4.'
+        $selectionPrompt = if ($IncludeReturnToCountdown) { 'Choose 1-5' } else { 'Choose 1-4' }
+        $selection = Read-Host $selectionPrompt
+        switch ($selection) {
+            '1' { return @{ Action = 'Setup'; DeleteFiles = $false; PromptForDeleteFolder = $false } }
+            '2' { return @{ Action = 'Status'; DeleteFiles = $false; PromptForDeleteFolder = $false } }
+            '3' { return @{ Action = 'Disable'; DeleteFiles = $false; PromptForDeleteFolder = $false } }
+            '4' { return @{ Action = 'Remove'; DeleteFiles = $false; PromptForDeleteFolder = $true } }
+            '5' {
+                if ($IncludeReturnToCountdown) {
+                    return @{ Action = 'Loop'; DeleteFiles = $false; PromptForDeleteFolder = $false }
+                }
+            }
+            default {
+                Write-Host ''
+                if ($IncludeReturnToCountdown) {
+                    Write-WarningLine 'Invalid selection. Use 1, 2, 3, 4, or 5.'
+                }
+                else {
+                    Write-WarningLine 'Invalid selection. Use 1, 2, 3, or 4.'
+                }
+                Start-Sleep -Milliseconds 900
+            }
         }
     }
 }
@@ -925,31 +991,47 @@ function Invoke-MenuSession {
             return
         }
 
-        if ($menuSelection.Action -in @('Setup', 'Disable', 'Remove')) {
+        if ($menuSelection.Action -in @('Setup', 'Remove')) {
             return
         }
 
         Write-Host ''
-        Write-InfoLine 'Press Enter to return to the menu.'
+        if ($menuSelection.Action -eq 'Disable') {
+            Write-InfoLine 'Press Enter to stay in the tool and return to the menu.'
+        }
+        else {
+            Write-InfoLine 'Press Enter to return to the menu.'
+        }
         Wait-ForEnter
     }
 }
 
-if ($PSCmdlet.ParameterSetName -eq 'Menu') {
-    Ensure-Elevated -RequestedAction '' -ScheduledTaskName $TaskName
-    Invoke-MenuSession
-    return
-}
+try {
+    $resolvedActionName = if ($PSCmdlet.ParameterSetName -eq 'Menu') { 'Menu' } else { $Action }
+    Write-LogEntry -Level 'INFO' -Message ("Starting action: {0}" -f $resolvedActionName)
 
-switch ($Action) {
-    'Setup' {
-        Invoke-SelectedAction -SelectedAction 'Setup' -SelectedStopTimeoutSeconds $StopTimeoutSeconds -SelectedShutdownDelaySeconds $ShutdownDelaySeconds -SelectedSignInGraceDelaySeconds $SignInGraceDelaySeconds
+    if ($PSCmdlet.ParameterSetName -eq 'Menu') {
+        Ensure-Elevated -RequestedAction '' -ScheduledTaskName $TaskName
+        Invoke-MenuSession
+        return
     }
-    'Configure' {
-        Invoke-SelectedAction -SelectedAction 'Configure' -SelectedStopTimeoutSeconds $StopTimeoutSeconds -SelectedShutdownDelaySeconds $ShutdownDelaySeconds -SelectedSignInGraceDelaySeconds $SignInGraceDelaySeconds
+
+    switch ($Action) {
+        'Setup' {
+            Invoke-SelectedAction -SelectedAction 'Setup' -SelectedStopTimeoutSeconds $StopTimeoutSeconds -SelectedShutdownDelaySeconds $ShutdownDelaySeconds -SelectedSignInGraceDelaySeconds $SignInGraceDelaySeconds
+        }
+        'Configure' {
+            Invoke-SelectedAction -SelectedAction 'Configure' -SelectedStopTimeoutSeconds $StopTimeoutSeconds -SelectedShutdownDelaySeconds $ShutdownDelaySeconds -SelectedSignInGraceDelaySeconds $SignInGraceDelaySeconds
+        }
+        'Status' { Invoke-SelectedAction -SelectedAction 'Status' }
+        'Disable' { Invoke-SelectedAction -SelectedAction 'Disable' }
+        'Remove' { Invoke-SelectedAction -SelectedAction 'Remove' -SelectedDeleteFiles:$DeleteFiles }
+        'Loop' { Invoke-SelectedAction -SelectedAction 'Loop' }
     }
-    'Status' { Invoke-SelectedAction -SelectedAction 'Status' }
-    'Disable' { Invoke-SelectedAction -SelectedAction 'Disable' }
-    'Remove' { Invoke-SelectedAction -SelectedAction 'Remove' -SelectedDeleteFiles:$DeleteFiles }
-    'Loop' { Invoke-SelectedAction -SelectedAction 'Loop' }
+}
+catch {
+    $errorContext = if ($PSCmdlet.ParameterSetName -eq 'Menu') { 'Menu session' } else { "Action $Action" }
+    Write-ExceptionLog -ErrorRecord $_ -Context $errorContext
+    Show-FatalErrorScreen -ErrorRecord $_ -Context $errorContext
+    exit 1
 }
