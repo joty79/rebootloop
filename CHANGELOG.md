@@ -28,3 +28,4 @@
 - Hardened the interactive menu so blank or invalid input no longer terminates the script after stop/menu transitions.
 - Added `reboot-loop.log` plus a top-level error screen so unexpected failures are captured and remain readable.
 - Fixed a naming collision with the built-in `Get-ScheduledTaskInfo` cmdlet that could break `Show current status` after stopping the test.
+- Renamed the visible BSOD-specific UI wording to more general `restart loop` testing wording.

@@ -7,7 +7,7 @@
 <h1 align="center">🔁 Reboot Loop</h1>
 
 <p align="center">
-  <b>Μικρό setup για αυτόματο reboot test μετά από sign-in.</b><br>
+  <b>Μικρό setup για automatic restart loop testing μετά από sign-in.</b><br>
   <sub>PowerShell setup → AutoLogon → Task Scheduler → reboot loop</sub>
 </p>
 
@@ -25,7 +25,7 @@
 
 - Σε field use είναι εύκολο να μπερδευτούν πολλά διαφορετικά script names.
 - Το ίδιο tool χρειάζεται setup, προσωρινό stop και πλήρες remove.
-- Για γρήγορο BSOD testing, ένα entrypoint είναι πιο πρακτικό.
+- Για γρήγορο restart loop testing, ένα entrypoint είναι πιο πρακτικό.
 
 ### Η λύση
 
@@ -33,10 +33,10 @@
 
 ```text
 reboot-loop.ps1
-  -> Start BSOD boot test
+  -> Start restart loop
   -> Loop
   -> Status
-  -> Stop reboot test
+  -> Stop restart loop
   -> Stop and clean up
   -> Optional folder delete prompt after cleanup
 ```
@@ -108,7 +108,7 @@ Logon
 ### Quick Setup
 ```powershell
 # 1. Άνοιξε elevated PowerShell στο folder
-Set-Location "D:\Users\joty79\scripts\reboot"
+Set-Location "D:\Users\joty79\scripts\RebootLoop"
 
 # 2. Τρέξε το all-in-one manager
 .\reboot-loop.ps1
@@ -119,20 +119,20 @@ Set-Location "D:\Users\joty79\scripts\reboot"
 Όταν ανοίξει το menu, θα δεις:
 
 ```text
-1. Start BSOD boot test
+1. Start restart loop
 2. Show current status
-3. Stop reboot test
+3. Stop restart loop
 4. Stop and clean up
 ```
 
-Μετά το `Start BSOD boot test`, το script:
+Μετά το `Start restart loop`, το script:
 - ζητάει timers
 - ζητάει και μικρό sign-in delay πριν αρχίσει το countdown
 - ζητάει password ή blank `Enter` για local no-password account
 - κάνει setup το `AutoLogon` και το `Scheduled Task`
 - στο τέλος ζητάει `Enter` για άμεσο reboot ή `Esc` για cancel προς το παρόν
 
-Το `Stop reboot test` δεν κλείνει πια το window του tool.
+Το `Stop restart loop` δεν κλείνει πια το window του tool.
 Σταματάει το loop, αφαιρεί το active scheduled behavior, και σε κρατάει μέσα στο menu ώστε να συνεχίσεις από το ίδιο παράθυρο.
 
 Αν προκύψει unexpected error, το tool γράφει λεπτομέρειες στο `reboot-loop.log` μέσα στο ίδιο folder
@@ -204,3 +204,4 @@ reboot/
 <p align="center">
   <sub>Built for Windows reboot testing · AutoLogon aware · Easy stop path</sub>
 </p>
+

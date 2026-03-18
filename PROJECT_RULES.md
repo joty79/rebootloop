@@ -154,3 +154,12 @@
 - Guardrail/rule: Do not name local helpers the same as ScheduledTasks cmdlets. Use repo-specific helper names such as `Get-RebootScheduledTask`.
 - Files affected: `reboot-loop.ps1`, `CHANGELOG.md`
 - Validation/tests run: PowerShell parser validation and manual review of the status lookup flow.
+
+### 2026-03-18 - Keep user-facing naming generic to restart testing
+
+- Date: 2026-03-18
+- Problem: BSOD-specific naming made the tool sound narrower than its actual use as a general restart loop tester.
+- Root cause: Early UI wording was optimized for one debugging scenario instead of the broader testing workflow.
+- Guardrail/rule: Prefer generic user-facing naming such as `restart loop` and `restart loop testing` unless a feature is truly BSOD-specific.
+- Files affected: `reboot-loop.ps1`, `README.md`, `CHANGELOG.md`
+- Validation/tests run: PowerShell parser validation and manual review of menu, banners, and README wording.

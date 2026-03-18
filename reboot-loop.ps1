@@ -563,25 +563,25 @@ function Invoke-Loop {
     $currentConfig = Get-RebootConfiguration
 
     try {
-        $host.UI.RawUI.WindowTitle = 'BSOD BOOT TEST'
+        $host.UI.RawUI.WindowTitle = 'RESTART LOOP'
     }
     catch {
     }
 
     if (Test-Path $disableFlagPath) {
-        Write-Banner -Title 'BSOD BOOT TEST IS STOPPED' -Subtitle 'The stop flag is active, so no reboot will happen.'
+        Write-Banner -Title 'RESTART LOOP IS STOPPED' -Subtitle 'The stop flag is active, so no reboot will happen.'
         Write-Section 'Next Step'
-        Write-InfoLine 'Run reboot-loop.ps1 and choose Start BSOD boot test to enable it again.'
+        Write-InfoLine 'Run reboot-loop.ps1 and choose Start restart loop to enable it again.'
         Start-Sleep -Seconds 5
         return
     }
 
     if (-not $script:LoopStartupDelayApplied) {
         $script:LoopStartupDelayApplied = $true
-        Invoke-WindowAttention -WindowTitle 'BSOD BOOT TEST'
+        Invoke-WindowAttention -WindowTitle 'RESTART LOOP'
 
         if ($currentConfig.SignInGraceDelaySeconds -gt 0) {
-            Write-Banner -Title 'BSOD BOOT TEST' -Subtitle 'Waiting for Windows to settle after sign-in'
+            Write-Banner -Title 'RESTART LOOP' -Subtitle 'Waiting for Windows to settle after sign-in'
             Write-Section 'Startup Delay'
             Write-InfoLine 'This short delay helps the window appear cleanly and gives it a better chance to grab attention.'
             Write-LabelValue -Label 'Delay' -Value ("{0} seconds" -f $currentConfig.SignInGraceDelaySeconds) -ValueColor Cyan
@@ -599,10 +599,10 @@ function Invoke-Loop {
             Write-Host ''
         }
 
-        Invoke-WindowAttention -WindowTitle 'BSOD BOOT TEST'
+        Invoke-WindowAttention -WindowTitle 'RESTART LOOP'
     }
 
-    Write-Banner -Title 'BSOD BOOT TEST' -Subtitle 'Automatic reboot cycle after sign-in'
+    Write-Banner -Title 'RESTART LOOP' -Subtitle 'Automatic reboot cycle after sign-in'
     Write-Section 'Status'
     Write-LabelValue -Label 'Launch source' -Value 'Task Scheduler after sign-in'
     Write-LabelValue -Label 'Sign-in delay' -Value ("{0} seconds" -f $currentConfig.SignInGraceDelaySeconds) -ValueColor Cyan
@@ -652,7 +652,7 @@ function Invoke-Setup {
     $userInfo = Get-QualifiedUserName
     $qualifiedUserName = '{0}\{1}' -f $userInfo.Domain, $userInfo.User
 
-    Write-Banner -Title 'START BSOD BOOT TEST' -Subtitle 'Setup for AutoLogon and Scheduled Task'
+    Write-Banner -Title 'START RESTART LOOP' -Subtitle 'Setup for AutoLogon and Scheduled Task'
     Write-Section 'Account'
     Write-LabelValue -Label 'User' -Value $qualifiedUserName -ValueColor Cyan
     Write-InfoLine 'Enter the local account password once for Windows AutoLogon.'
@@ -876,7 +876,7 @@ function Invoke-Status {
         $autoLogonEnabled = $false
     }
 
-    Write-Banner -Title 'CURRENT BSOD BOOT TEST STATUS' -Subtitle 'Quick health check for the configured test.'
+    Write-Banner -Title 'CURRENT RESTART LOOP STATUS' -Subtitle 'Quick health check for the configured test.'
     Write-LabelValue -Label 'Task name' -Value $ScheduledTaskName -ValueColor Cyan
     Write-LabelValue -Label 'Scheduled task' -Value ([bool]($null -ne $taskInfo)) -ValueColor Cyan
     Write-LabelValue -Label 'Disable flag' -Value (Test-Path $disableFlagPath) -ValueColor Cyan
@@ -894,11 +894,11 @@ function Get-MenuSelection {
     )
 
     while ($true) {
-        Write-Banner -Title 'BSOD BOOT TEST MANAGER' -Subtitle 'One file for setup, loop control, timers, and cleanup'
+        Write-Banner -Title 'RESTART LOOP MANAGER' -Subtitle 'One file for setup, loop control, timers, and cleanup'
         Write-Section 'Menu'
-        Write-MenuItem -Number '1' -Text 'Start BSOD boot test'
+        Write-MenuItem -Number '1' -Text 'Start restart loop'
         Write-MenuItem -Number '2' -Text 'Show current status'
-        Write-MenuItem -Number '3' -Text 'Stop reboot test'
+        Write-MenuItem -Number '3' -Text 'Stop restart loop'
         Write-MenuItem -Number '4' -Text 'Stop and clean up'
         if ($IncludeReturnToCountdown) {
             Write-MenuItem -Number '5' -Text 'Return to reboot countdown'
